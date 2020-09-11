@@ -50,7 +50,6 @@
 extern const size_t chunk_size;
 extern const size_t number_measurements;
 
-static t_ctx *t[number_tests];
 static int64_t percentiles[number_percentiles] = {0};
 
 /* threshold values for Welch's t-test */
@@ -76,7 +75,7 @@ static void prepare_percentiles(int64_t *ticks)
     }
 }
 
-static void update_statistics(int64_t *exec_times, uint8_t *classes)
+static void update_statistics(t_ctx *ctx, int64_t *exec_times, uint8_t *classes)
 {
     for (size_t i = 0; i < number_measurements; i++) {
         int64_t difference = exec_times[i];
@@ -85,34 +84,35 @@ static void update_statistics(int64_t *exec_times, uint8_t *classes)
             continue;
         }
         /* do a t-test on the execution time */
-        t_push(t[0], difference, classes[i]);
+        t_push(&ctx[0], difference, classes[i]);
 
         // do a t-test on cropped execution times, for several cropping
         // thresholds.
         for (size_t crop_index = 0; crop_index < number_percentiles;
              crop_index++) {
             if (difference < percentiles[crop_index]) {
-                t_push(t[crop_index + 1], difference, classes[i]);
+                t_push(&ctx[crop_index + 1], difference, classes[i]);
             }
         }
 
         // do a second-order test (only if we have more than 10000
         // measurements). Centered product pre-processing.
-        if (t[0]->n[0] > 10000) {
-            double centered = (double) difference - t[0]->mean[classes[i]];
-            t_push(t[1 + number_percentiles], centered * centered, classes[i]);
+        if (ctx[0].n[0] > 10000) {
+            double centered = (double) difference - ctx[0].mean[classes[i]];
+            t_push(&ctx[1 + number_percentiles], centered * centered,
+                   classes[i]);
         }
     }
 }
 
 // which t-test yields max t value?
-static int max_test(void)
+static int max_test(t_ctx *ctx)
 {
     int ret = 0;
     double max = 0;
     for (size_t i = 0; i < number_tests; i++) {
-        if (t[i]->n[0] > enough_measurements) {
-            double x = fabs(t_compute(t[i]));
+        if (ctx[i].n[0] > enough_measurements) {
+            double x = fabs(t_compute(&ctx[i]));
             if (max < x) {
                 max = x;
                 ret = i;
@@ -122,11 +122,11 @@ static int max_test(void)
     return ret;
 }
 
-static bool report(void)
+static bool report(t_ctx *ctx)
 {
-    int mt = max_test();
-    double max_t = fabs(t_compute(t[mt]));
-    double number_traces_max_t = t[mt]->n[0] + t[mt]->n[1];
+    int mt = max_test(ctx);
+    double max_t = fabs(t_compute(&ctx[mt]));
+    double number_traces_max_t = ctx[mt].n[0] + ctx[mt].n[1];
     double max_tau = max_t / sqrt(number_traces_max_t);
 
     printf("\033[A\033[2K");
@@ -160,7 +160,7 @@ static bool report(void)
     }
 }
 
-static bool doit(int mode)
+static bool doit(t_ctx *ctx, int mode)
 {
     int64_t *exec_times = calloc(number_measurements, sizeof(int64_t));
     uint8_t *classes = calloc(number_measurements, sizeof(uint8_t));
@@ -179,8 +179,8 @@ static bool doit(int mode)
         prepare_percentiles(exec_times);
     }
 
-    update_statistics(exec_times, classes);
-    bool ret = report();
+    update_statistics(ctx, exec_times, classes);
+    bool ret = report(ctx);
 
     free(exec_times);
     free(classes);
@@ -190,11 +190,11 @@ static bool doit(int mode)
     return ret;
 }
 
-static void init_once(void)
+static void init_once(t_ctx *ctx)
 {
     init_dut();
     for (int i = 0; i < number_tests; i++) {
-        t_init(t[i]);
+        t_init(&ctx[i]);
     }
 }
 
@@ -202,24 +202,18 @@ bool is_insert_tail_const(void)
 {
     bool result = false;
 
-    for (int i = 0; i < number_tests; i++) {
-        t[i] = malloc(sizeof(t_ctx));
-    }
-
+    t_ctx *ctx = malloc(number_tests * sizeof(t_ctx));
     for (int cnt = 0; cnt < test_tries; ++cnt) {
         printf("Testing insert_tail...(%d/%d)\n\n", cnt, test_tries);
-        init_once();
+        init_once(ctx);
         for (int i = 0; i < enough_measurements / (number_measurements) + 1;
              ++i)
-            result = doit(0);
+            result = doit(ctx, 0);
         printf("\033[A\033[2K\033[A\033[2K");
         if (result == true)
             break;
     }
-
-    for (int i = 0; i < number_tests; i++) {
-        free(t[i]);
-    }
+    free(ctx);
 
     return result;
 }
@@ -228,24 +222,18 @@ bool is_size_const(void)
 {
     bool result = false;
 
-    for (int i = 0; i < number_tests; i++) {
-        t[i] = malloc(sizeof(t_ctx));
-    }
-
+    t_ctx *ctx = malloc(number_tests * sizeof(t_ctx));
     for (int cnt = 0; cnt < test_tries; ++cnt) {
         printf("Testing size...(%d/%d)\n\n", cnt, test_tries);
-        init_once();
+        init_once(ctx);
         for (int i = 0; i < enough_measurements / (number_measurements) + 1;
              ++i)
-            result = doit(1);
+            result = doit(ctx, 1);
         printf("\033[A\033[2K\033[A\033[2K");
         if (result == true)
             break;
     }
-
-    for (int i = 0; i < number_tests; i++) {
-        free(t[i]);
-    }
+    free(ctx);
 
     return result;
 }
