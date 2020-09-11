@@ -3,6 +3,6 @@
 
 #include "queue.h"
 
-void merge_sort(queue_t *q, cmp_func cmp);
+void merge_sort(queue_t *q, const cmp_func cmp);
 
 #endif

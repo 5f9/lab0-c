@@ -7,14 +7,15 @@
  * to chaining of merge() calls: null-terminated, no reserved or
  * sentinel head node.
  */
-static inline list_ele_t *merge(cmp_func cmp, list_ele_t *a, list_ele_t *b)
+static inline list_ele_t *merge(const cmp_func cmp,
+                                list_ele_t *a,
+                                list_ele_t *b)
 {
     // cppcheck-suppress unassignedVariable
     list_ele_t *head, **tail = &head;
 
     for (;;) {
-        /* if equal, take 'a' -- important for sort stability */
-        if (cmp(&a->value, &b->value) <= 0) {
+        if (cmp(a->value, b->value) <= 0) {
             *tail = a;
             tail = &(a->next);
             a = a->next;
@@ -35,35 +36,26 @@ static inline list_ele_t *merge(cmp_func cmp, list_ele_t *a, list_ele_t *b)
     return head;
 }
 
-
 /*
- * Combine final list merge with restoration of standard doubly-linked
- * list structure.  This approach duplicates code from merge(), but
- * runs faster than the tidier alternatives of either a separate final
- * prev-link restoration pass, or maintaining the prev links
- * throughout.
+ * Combine final list merge with restoration
  */
-static inline void merge_final(cmp_func cmp,
+static inline void merge_final(const cmp_func cmp,
                                queue_t *q,
                                list_ele_t *a,
                                list_ele_t *b)
 {
-    list_ele_t head = {.next = q->head, .value = ""};
+    list_ele_t head = {.next = q->head};
     list_ele_t *tail = &head;
-    // size_t count = 0;
 
     for (;;) {
-        /* if equal, take 'a' -- important for sort stability */
-        if (cmp(&a->value, &b->value) <= 0) {
+        if (cmp(a->value, b->value) <= 0) {
             tail->next = a;
-            // a->prev = tail;
             tail = a;
             a = a->next;
             if (!a)
                 break;
         } else {
             tail->next = b;
-            // b->prev = tail;
             tail = b;
             b = b->next;
             if (!b) {
@@ -76,54 +68,55 @@ static inline void merge_final(cmp_func cmp,
     /* Finish linking remainder of list b on to tail */
     tail->next = b;
     do {
-        /*
-         * If the merge is highly unbalanced (e.g. the input is
-         * already sorted), this loop may run many iterations.
-         * Continue callbacks to the client even though no
-         * element comparison is needed, so the client's cmp()
-         * routine can invoke cond_resched() periodically.
-         */
-        // if (unlikely(!++count))
-        //      cmp(b, b);
-        // b->prev = tail;
         tail = b;
         b = b->next;
     } while (b);
 
-    /* And the final links to make a circular doubly-linked list */
-    // tail->next = head;
-    // head->prev = tail;
     q->head = head.next;
     q->tail = tail;
 }
 
-static list_ele_t *_merge_sort(list_ele_t *head, size_t size, cmp_func cmp)
+void merge_sort(queue_t *q, const cmp_func cmp)
 {
-    RETURN_IF_NULL(head && head->next, head);
+    list_ele_t *sorted[64];
+    size_t sorted_count = 0;
 
-    size_t count = size >> 1;
-    list_ele_t *b = head;
-    for (size_t i = 1; i < count; i++)
-        b = b->next;
+    list_ele_t *list = q->head->next, *pending = q->head;
+    pending->next = NULL;
+    size_t count = 1;
 
-    list_ele_t *a = b->next;
-    b->next = NULL;
+    do {
+        size_t bits;
+        sorted[sorted_count] = pending;
 
-    return merge(cmp, _merge_sort(a, count + (size & 1), cmp),
-                 _merge_sort(head, count, cmp));
-}
+        size_t prev_count = 0;
+        /* Find the least-significant clear bit in count */
+        for (bits = count; bits & 1; bits >>= 1)
+            prev_count++;
 
-// cppcheck-suppress unusedFunction
-void merge_sort(queue_t *q, cmp_func cmp)
-{
-    size_t count = q->size >> 1;
-    list_ele_t *b = q->head;
-    for (size_t i = 1; i < count; i++)
-        b = b->next;
+        /* Do the indicated merge */
+        if (likely(bits)) {
+            size_t end = sorted_count - prev_count;
+            size_t start = end - 1;
 
-    list_ele_t *a = b->next;
-    b->next = NULL;
+            sorted[start] = merge(cmp, sorted[start], sorted[end]);
 
-    merge_final(cmp, q, _merge_sort(a, count + (q->size & 1), cmp),
-                _merge_sort(q->head, count, cmp));
+            for (size_t i = end; i < sorted_count; i++)
+                sorted[i] = sorted[i + 1];
+
+        } else {
+            sorted_count++;
+        }
+
+        pending = list;
+        list = list->next;
+        pending->next = NULL;
+        count++;
+    } while (list);
+
+    for (size_t i = sorted_count - 1; i > 0; i--) {
+        pending = merge(cmp, sorted[i], pending);
+    }
+
+    merge_final(cmp, q, sorted[0], pending);
 }

@@ -1,52 +1,27 @@
 #include "str_cmp.h"
-#include "natsort/strnatcmp.h"
 
 // cppcheck-suppress unusedFunction
-int cmp_str(const void *a, const void *b)
+int cmp_str_desc(const char *a, const char *b)
 {
-    return strcmp(*(char **) a, *(char **) b);
+    return strcmp(b, a);
 }
 
 // cppcheck-suppress unusedFunction
-int cmp_str_desc(const void *a, const void *b)
+int cmp_str_nat_desc(const char *a, const char *b)
 {
-    return strcmp(*(char **) b, *(char **) a);
+    return strnatcmp(b, a);
 }
 
 // cppcheck-suppress unusedFunction
-int cmp_str_nat(const void *a, const void *b)
+int cmp_str_case_desc(const char *a, const char *b)
 {
-    return strnatcmp(*(char **) a, *(char **) b);
+    return strcasecmp(b, a);
 }
 
 // cppcheck-suppress unusedFunction
-int cmp_str_nat_desc(const void *a, const void *b)
+int cmp_str_nat_case_desc(const char *a, const char *b)
 {
-    return strnatcmp(*(char **) b, *(char **) a);
-}
-
-// cppcheck-suppress unusedFunction
-int cmp_str_case(const void *a, const void *b)
-{
-    return strcasecmp(*(char **) a, *(char **) b);
-}
-
-// cppcheck-suppress unusedFunction
-int cmp_str_case_desc(const void *a, const void *b)
-{
-    return strcasecmp(*(char **) b, *(char **) a);
-}
-
-// cppcheck-suppress unusedFunction
-int cmp_str_nat_case(const void *a, const void *b)
-{
-    return strnatcasecmp(*(char **) a, *(char **) b);
-}
-
-// cppcheck-suppress unusedFunction
-int cmp_str_nat_case_desc(const void *a, const void *b)
-{
-    return strnatcasecmp(*(char **) b, *(char **) a);
+    return strnatcasecmp(b, a);
 }
 
 cmp_func q_get_compar(const int sorting_order,
@@ -62,9 +37,9 @@ cmp_func q_get_compar(const int sorting_order,
             }
         } else {
             if (natural_sort) {
-                return cmp_str_nat_case;
+                return strnatcasecmp;
             } else {
-                return cmp_str_case;
+                return strcasecmp;
             }
         }
     } else {
@@ -76,9 +51,9 @@ cmp_func q_get_compar(const int sorting_order,
             }
         } else {
             if (natural_sort) {
-                return cmp_str_nat;
+                return strnatcmp;
             } else {
-                return cmp_str;
+                return strcmp;
             }
         }
     }

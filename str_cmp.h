@@ -6,12 +6,8 @@
 #include "natsort/strnatcmp.h"
 
 /* Comparison of the Linked list element function */
-typedef int (*cmp_func)(const void *, const void *);
+typedef int (*cmp_func)(const char *, const char *);
 
-int cmp_str(const void *a, const void *b);
-int cmp_str_desc(const void *a, const void *b);
-int cmp_str_nat(const void *a, const void *b);
-int cmp_str_nat_desc(const void *a, const void *b);
 cmp_func q_get_compar(const int sorting_order,
                       const int natural_sort,
                       const int ignoring_case);

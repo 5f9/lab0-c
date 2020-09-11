@@ -6,6 +6,22 @@
 #include "merge_sort.h"
 #include "queue.h"
 
+static list_ele_t *new_ele_str(char const *s)
+{
+    list_ele_t *e = malloc(sizeof(list_ele_t));
+    RETURN_IF_NULL(e, NULL);
+
+    size_t length = strlen(s) + 1;
+    e->value = malloc(length);
+    if (!e->value) {
+        free(e);
+        return NULL;
+    } else {
+        STRNCPY(e->value, s, length);
+        return e;
+    }
+}
+
 /*
  * Create empty queue.
  * Return NULL if could not allocate space.
@@ -44,24 +60,19 @@ void q_free(queue_t *q)
  * Argument s points to the string to be stored.
  * The function must explicitly allocate space and copy the string into it.
  */
-bool q_insert_head(queue_t *q, char *s)
+bool q_insert_head(queue_t *q, const char *s)
 {
     RETURN_IF_NULL(q, false);
 
-    list_ele_t *newh = malloc(sizeof(list_ele_t));
-    RETURN_IF_NULL(newh, false);
+    list_ele_t *e = new_ele_str(s);
+    RETURN_IF_NULL(e, false);
 
-    size_t length = strlen(s) + 1;
-    newh->value = malloc(length);
-    RETURN_AND_FREE_IF_NULL(newh->value, newh, false);
+    e->next = q->head;
 
-    STRNCPY(newh->value, s, length);
-    newh->next = q->head;
-    q->head = newh;
-    if (!(q->tail))
-        q->tail = newh;
+    q->head = e;
+    if (!(q->size++))
+        q->tail = e;
 
-    q->size++;
     return true;
 }
 
@@ -72,24 +83,19 @@ bool q_insert_head(queue_t *q, char *s)
  * Argument s points to the string to be stored.
  * The function must explicitly allocate space and copy the string into it.
  */
-bool q_insert_tail(queue_t *q, char *s)
+bool q_insert_tail(queue_t *q, const char *s)
 {
     RETURN_IF_NULL(q, false);
 
     RETURN_IF_NULL(q->head, q_insert_head(q, s));
 
-    list_ele_t *newh = malloc(sizeof(list_ele_t));
-    RETURN_IF_NULL(newh, false);
+    list_ele_t *e = new_ele_str(s);
+    RETURN_IF_NULL(e, false);
 
-    size_t length = strlen(s) + 1;
-    newh->value = malloc(length);
-    RETURN_AND_FREE_IF_NULL(newh->value, newh, false);
+    e->next = NULL;
 
-    STRNCPY(newh->value, s, length);
-    newh->next = NULL;
-
-    q->tail->next = newh;
-    q->tail = newh;
+    q->tail->next = e;
+    q->tail = e;
     q->size++;
     return true;
 }
@@ -106,17 +112,16 @@ bool q_remove_head(queue_t *q, char *sp, size_t bufsize)
 {
     RETURN_IF_NULL(q && q->size, false);
 
-    list_ele_t *newh = q->head;
-    q->head = newh->next;
-    if (sp && bufsize) {
-        STRNCPY(sp, newh->value, bufsize);
-    }
-    if (!q->head) {
+    list_ele_t *e = q->head;
+    q->head = e->next;
+    if (sp && bufsize)
+        STRNCPY(sp, e->value, bufsize);
+
+    free(e->value);
+    free(e);
+    if (!(--q->size))
         q->tail = NULL;
-    }
-    free(newh->value);
-    free(newh);
-    q->size--;
+
     return true;
 }
 
@@ -124,7 +129,7 @@ bool q_remove_head(queue_t *q, char *sp, size_t bufsize)
  * Return number of elements in queue.
  * Return 0 if q is NULL or empty
  */
-int q_size(queue_t *q)
+int q_size(const queue_t *q)
 {
     RETURN_IF_NULL(q, 0);
 
@@ -143,15 +148,15 @@ void q_reverse(queue_t *q)
     RETURN_IF_NULL(q && 1 < q->size, );
 
     q->tail = q->head;
-    list_ele_t *next = q->head->next;
-    while (next->next) {
-        list_ele_t *t = next->next;
-        next->next = q->head;
-        q->head = next;
-        next = t;
+    list_ele_t *e = q->head->next;
+    while (e->next) {
+        list_ele_t *t = e->next;
+        e->next = q->head;
+        q->head = e;
+        e = t;
     }
-    next->next = q->head;
-    q->head = next;
+    e->next = q->head;
+    q->head = e;
     q->tail->next = NULL;
 }
 
@@ -160,9 +165,9 @@ void q_reverse(queue_t *q)
  * No effect if q is NULL or empty. In addition, if q has only one
  * element, do nothing.
  */
-void q_sort(queue_t *q, q_sort_func sort_fun, cmp_func cmp)
+void q_sort(queue_t *q, const cmp_func cmp)
 {
     RETURN_IF_NULL(q && 1 < q->size, );
 
-    sort_fun(q, cmp);
+    merge_sort(q, cmp);
 }

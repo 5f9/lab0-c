@@ -12,18 +12,17 @@
 #include <stddef.h>
 #include "str_cmp.h"
 
+#ifndef likely
+#define likely(x) __builtin_expect((x), 1)
+#endif
+#ifndef unlikely
+#define unlikely(x) __builtin_expect((x), 0)
+#endif
+
 #define RETURN_IF_NULL(obj, ret_val) \
     do {                             \
-        if (!(obj))                  \
+        if (unlikely(!(obj)))        \
             return ret_val;          \
-    } while (0)
-
-#define RETURN_AND_FREE_IF_NULL(obj, free_obj, ret_val) \
-    do {                                                \
-        if (!(obj)) {                                   \
-            free(free_obj);                             \
-            return ret_val;                             \
-        }                                               \
     } while (0)
 
 #define STRNCPY(dest, src, len)  \
@@ -50,8 +49,6 @@ typedef struct {
     size_t size;
 } queue_t;
 
-typedef void (*q_sort_func)(queue_t *q, cmp_func cmp);
-
 /* Operations on queue */
 
 /*
@@ -73,7 +70,7 @@ void q_free(queue_t *q);
  * Argument s points to the string to be stored.
  * The function must explicitly allocate space and copy the string into it.
  */
-bool q_insert_head(queue_t *q, char *s);
+bool q_insert_head(queue_t *q, const char *s);
 
 /*
  * Attempt to insert element at tail of queue.
@@ -82,7 +79,7 @@ bool q_insert_head(queue_t *q, char *s);
  * Argument s points to the string to be stored.
  * The function must explicitly allocate space and copy the string into it.
  */
-bool q_insert_tail(queue_t *q, char *s);
+bool q_insert_tail(queue_t *q, const char *s);
 
 /*
  * Attempt to remove element from head of queue.
@@ -98,7 +95,7 @@ bool q_remove_head(queue_t *q, char *sp, size_t bufsize);
  * Return number of elements in queue.
  * Return 0 if q is NULL or empty
  */
-int q_size(queue_t *q);
+int q_size(const queue_t *q);
 
 /*
  * Reverse elements in queue
@@ -114,6 +111,6 @@ void q_reverse(queue_t *q);
  * No effect if q is NULL or empty. In addition, if q has only one
  * element, do nothing.
  */
-void q_sort(queue_t *q, q_sort_func sort_fun, cmp_func cmp);
+void q_sort(queue_t *q, const cmp_func cmp);
 
 #endif /* LAB0_QUEUE_H */
