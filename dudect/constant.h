@@ -28,9 +28,6 @@
 
 void init_dut();
 void prepare_inputs(uint8_t *input_data, uint8_t *classes);
-void measure(int64_t *before_ticks,
-             int64_t *after_ticks,
-             uint8_t *input_data,
-             int mode);
+void measure(int64_t *exec_times, uint8_t *input_data, int mode);
 
 #endif

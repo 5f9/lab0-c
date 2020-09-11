@@ -15,7 +15,7 @@
 const size_t chunk_size = 16;
 /* Number of measurements per test */
 const size_t number_measurements = NR_MEASURE;
-const int drop_size = 20;
+
 /* Maintain a queue independent from the qtest since
  * we do not want the test to affect the original functionality
  */
@@ -52,33 +52,30 @@ void prepare_inputs(uint8_t *input_data, uint8_t *classes)
     }
 }
 
-void measure(int64_t *before_ticks,
-             int64_t *after_ticks,
-             uint8_t *input_data,
-             int mode)
+void measure(int64_t *exec_times, uint8_t *input_data, int mode)
 {
     assert(mode == test_insert_tail || mode == test_size);
     if (mode == test_insert_tail) {
-        for (size_t i = drop_size; i < number_measurements - drop_size; i++) {
+        for (size_t i = 0; i < number_measurements; i++) {
             char *s = get_random_string();
             dut_new();
             dut_insert_head(
                 get_random_string(),
                 *(uint16_t *) (input_data + i * chunk_size) % 10000);
-            before_ticks[i] = cpucycles();
+            int64_t before_ticks = cpucycles();
             dut_insert_tail(s, 1);
-            after_ticks[i] = cpucycles();
+            exec_times[i] = cpucycles() - before_ticks;
             dut_free();
         }
     } else {
-        for (size_t i = drop_size; i < number_measurements - drop_size; i++) {
+        for (size_t i = 0; i < number_measurements; i++) {
             dut_new();
             dut_insert_head(
                 get_random_string(),
                 *(uint16_t *) (input_data + i * chunk_size) % 10000);
-            before_ticks[i] = cpucycles();
+            int64_t before_ticks = cpucycles();
             dut_size(1);
-            after_ticks[i] = cpucycles();
+            exec_times[i] = cpucycles() - before_ticks;
             dut_free();
         }
     }
