@@ -76,7 +76,7 @@ valgrind: valgrind_existence
 	@echo "scripts/driver.py -p $(patched_file) --valgrind -t <tid>"
 
 clean:
-	rm -f $(OBJS) $(deps) *~ qtest /tmp/qtest.*
+	rm -f $(OBJS) $(deps) *~ qtest /tmp/qtest.* .qtest.history.txt
 	rm -rf .$(DUT_DIR) .$(NAT_DIR) .$(LIN_DIR)
 	rm -rf *.dSYM
 	(cd traces; rm -f *~)
