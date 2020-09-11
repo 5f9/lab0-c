@@ -57,7 +57,9 @@ static int fail_limit = BIG_QUEUE;
 static int fail_count = 0;
 
 static int string_length = MAXSTRING;
-static int natural_sort = 0;  // 0: strcasecmp, 1: natural sort
+static int sorting_order = 0;  // 0: ascending order, 1: descending order
+static int natural_sort = 0;   // 0: strcasecmp, 1: natural sort
+static int ignoring_case = 0;  // 0: case-sensitive, 1: ignoring case
 
 #define MIN_RANDSTR_LEN 5
 #define MAX_RANDSTR_LEN 10
@@ -107,6 +109,12 @@ static void console_init()
               "Number of times allow queue operations to return false", NULL);
     add_param("natural", &natural_sort,
               "specify natural sort (0: strcasecmp, 1: natural)", NULL);
+    add_param("case", &ignoring_case,
+              "specify case-insensitive string comparison (0: sensitive, 1: "
+              "insensitive)",
+              NULL);
+    add_param("order", &sorting_order,
+              "specify sorting order (0: ascending, 1: descending)", NULL);
 }
 
 static bool do_new(int argc, char *argv[])
@@ -534,8 +542,73 @@ static bool do_size(int argc, char *argv[])
     return ok && !error_check();
 }
 
+static bool test_q_sort(queue_t *q,
+                        cmp_func cmpare_func,
+                        size_t length,
+                        char *s[])
+{
+    for (size_t i = 0; i < length; i++) {
+        if (!q_insert_head(q, s[i]))
+            return false;
+    }
+
+    q_sort(q, cmpare_func);
+    list_ele_t *e = q->head;
+    for (size_t i = 0; i < length; i++) {
+        if (!e)
+            return false;
+
+        if (strcmp(s[i], e->value) != 0)
+            return false;
+
+        e = e->next;
+    }
+    return true;
+}
+
+static bool is_natural_sort(void)
+{
+    queue_t *x = q_new();
+    RETURN_IF_NULL(x, false);
+
+    bool result = false;
+
+    // ascending natural sort
+    cmp_func cmpare_func = q_get_compar(0, 1, 0);
+
+    // a < a0 < a1 < a1a < a1b < a2 < a10 < a20
+    char *natsort[8] = {"a", "a0", "a1", "a1a", "a1b", "a2", "a10", "a20"};
+    if (!test_q_sort(x, cmpare_func, 8, natsort))
+        goto failed_insert_head;
+
+    // 1.001 < 1.002 < 1.010 < 1.02 < 1.1 < 1.3
+    char *natsort2[6] = {"1.001", "1.002", "1.010", "1.02", "1.1", "1.3"};
+    if (!test_q_sort(x, cmpare_func, 6, natsort2))
+        goto failed_insert_head;
+
+    result = true;
+
+failed_insert_head:
+    q_free(x);
+    return result;
+}
+
 bool do_sort(int argc, char *argv[])
 {
+    if (simulation) {
+        if (argc != 1) {
+            report(1, "%s does not need arguments in simulation mode", argv[0]);
+            return false;
+        }
+        bool ok = is_natural_sort();
+        if (!ok) {
+            report(1, "ERROR: Probably not natural sort");
+            return false;
+        }
+        report(1, "Probably natural sort");
+        return ok;
+    }
+
     if (argc != 1) {
         report(1, "%s takes no arguments", argv[0]);
         return false;
@@ -550,7 +623,10 @@ bool do_sort(int argc, char *argv[])
         report(3, "Warning: Calling sort on single node");
     error_check();
 
-    cmp_func cmpare_func = q_get_compar(0, natural_sort);
+    cmp_func cmpare_func =
+        q_get_compar(sorting_order, natural_sort, ignoring_case);
+    char *sorting_name = sorting_order ? "descending" : "ascending";
+    char *cmpare_name = natural_sort ? " natural" : "";
     set_noallocate_mode(true);
     if (exception_setup(true))
         q_sort(q, cmpare_func);
@@ -563,7 +639,8 @@ bool do_sort(int argc, char *argv[])
             /* Ensure each element in ascending order */
             /* FIXME: add an option to specify sorting order */
             if (cmpare_func(&e->value, &e->next->value) > 0) {
-                report(1, "ERROR: Not sorted in ascending order");
+                report(1, "ERROR: Not sorted in %s%s order", sorting_name,
+                       cmpare_name);
                 ok = false;
                 break;
             }

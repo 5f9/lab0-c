@@ -12,6 +12,26 @@
 #include <stddef.h>
 #include "str_cmp.h"
 
+#define RETURN_IF_NULL(obj, ret_val) \
+    do {                             \
+        if (!(obj))                  \
+            return ret_val;          \
+    } while (0)
+
+#define RETURN_AND_FREE_IF_NULL(obj, free_obj, ret_val) \
+    do {                                                \
+        if (!(obj)) {                                   \
+            free(free_obj);                             \
+            return ret_val;                             \
+        }                                               \
+    } while (0)
+
+#define STRNCPY(dest, src, len)  \
+    do {                         \
+        strncpy(dest, src, len); \
+        dest[len - 1] = '\0';    \
+    } while (0)
+
 /* Data structure declarations */
 
 /* Linked list element (You shouldn't need to change this) */
@@ -26,11 +46,7 @@ typedef struct ELE {
 /* Queue structure */
 typedef struct {
     list_ele_t *head; /* Linked list of elements */
-    list_ele_t *tail; /* Linked list of elements */
-    /* TODO: You will need to add more fields to this structure
-     *        to efficiently implement q_size and q_insert_tail.
-     */
-    /* TODO: Remove the above comment when you are about to implement. */
+    list_ele_t *tail; /* Element at tail of queue */
     size_t size;
 } queue_t;
 
