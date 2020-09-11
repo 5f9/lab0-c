@@ -160,9 +160,9 @@ void q_reverse(queue_t *q)
  * No effect if q is NULL or empty. In addition, if q has only one
  * element, do nothing.
  */
-void q_sort(queue_t *q, cmp_func cmp)
+void q_sort(queue_t *q, q_sort_func sort_fun, cmp_func cmp)
 {
     RETURN_IF_NULL(q && 1 < q->size, );
 
-    merge_sort(q, cmp);
+    sort_fun(q, cmp);
 }

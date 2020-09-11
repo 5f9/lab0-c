@@ -34,6 +34,9 @@
 #include "console.h"
 #include "report.h"
 
+#include "merge_sort.h"
+#include "quick_sort.h"
+
 /* Settable parameters */
 
 /*
@@ -57,9 +60,10 @@ static int fail_limit = BIG_QUEUE;
 static int fail_count = 0;
 
 static int string_length = MAXSTRING;
-static int sorting_order = 0;  // 0: ascending order, 1: descending order
-static int natural_sort = 0;   // 0: strcasecmp, 1: natural sort
-static int ignoring_case = 0;  // 0: case-sensitive, 1: ignoring case
+static int sorting_order = 0;        // 0: ascending order, 1: descending order
+static int natural_sort = 0;         // 0: strcasecmp, 1: natural sort
+static int ignoring_case = 0;        // 0: case-sensitive, 1: ignoring case
+static int queue_sort_function = 0;  // 0: merge, 1:quick
 
 #define MIN_RANDSTR_LEN 5
 #define MAX_RANDSTR_LEN 10
@@ -115,6 +119,8 @@ static void console_init()
               NULL);
     add_param("order", &sorting_order,
               "specify sorting order (0: ascending, 1: descending)", NULL);
+    add_param("sort", &queue_sort_function,
+              "specify queue sort function (0: merge, 2:quick)", NULL);
 }
 
 static bool do_new(int argc, char *argv[])
@@ -542,6 +548,18 @@ static bool do_size(int argc, char *argv[])
     return ok && !error_check();
 }
 
+static q_sort_func get_sort_func()
+{
+    switch (queue_sort_function) {
+    case 0:
+        return merge_sort;
+    case 1:
+        return quick_sort;
+    default:
+        return merge_sort;
+    }
+}
+
 static bool test_q_sort(queue_t *q,
                         cmp_func cmpare_func,
                         size_t length,
@@ -552,7 +570,7 @@ static bool test_q_sort(queue_t *q,
             return false;
     }
 
-    q_sort(q, cmpare_func);
+    q_sort(q, get_sort_func(), cmpare_func);
     list_ele_t *e = q->head;
     for (size_t i = 0; i < length; i++) {
         if (!e)
@@ -629,13 +647,14 @@ bool do_sort(int argc, char *argv[])
     char *cmpare_name = natural_sort ? " natural" : "";
     set_noallocate_mode(true);
     if (exception_setup(true))
-        q_sort(q, cmpare_func);
+        q_sort(q, get_sort_func(), cmpare_func);
     exception_cancel();
     set_noallocate_mode(false);
 
     bool ok = true;
     if (q) {
-        for (list_ele_t *e = q->head; e && --cnt; e = e->next) {
+        list_ele_t *e = q->head;
+        for (; e && --cnt; e = e->next) {
             /* Ensure each element in ascending order */
             /* FIXME: add an option to specify sorting order */
             if (cmpare_func(&e->value, &e->next->value) > 0) {
@@ -644,6 +663,11 @@ bool do_sort(int argc, char *argv[])
                 ok = false;
                 break;
             }
+        }
+        if (e != q->tail) {
+            report(1,
+                   "ERROR: The element at the end of the queue is incorrect");
+            ok = false;
         }
     }
 

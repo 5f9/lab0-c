@@ -34,7 +34,7 @@
 
 /* Data structure declarations */
 
-/* Linked list element (You shouldn't need to change this) */
+/* Linked list element */
 typedef struct ELE {
     /* Pointer to array holding string.
      * This array needs to be explicitly allocated and freed
@@ -49,6 +49,8 @@ typedef struct {
     list_ele_t *tail; /* Element at tail of queue */
     size_t size;
 } queue_t;
+
+typedef void (*q_sort_func)(queue_t *q, cmp_func cmp);
 
 /* Operations on queue */
 
@@ -112,6 +114,6 @@ void q_reverse(queue_t *q);
  * No effect if q is NULL or empty. In addition, if q has only one
  * element, do nothing.
  */
-void q_sort(queue_t *q, cmp_func cmp);
+void q_sort(queue_t *q, q_sort_func sort_fun, cmp_func cmp);
 
 #endif /* LAB0_QUEUE_H */
