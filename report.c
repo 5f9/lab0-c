@@ -226,24 +226,23 @@ void *calloc_or_fail(size_t cnt, size_t bytes, char *fun_name)
     return p;
 }
 
-char *strsave_or_fail(char *s, char *fun_name)
+char *strsave_or_fail(char *s, size_t len, char *fun_name)
 {
     if (!s)
         return NULL;
 
-    size_t len = strlen(s);
-    check_exceed(len + 1);
-    char *ss = malloc(len + 1);
+    check_exceed(len);
+    char *ss = malloc(len);
     if (!ss)
         fail_fun("strsave failed in %s", fun_name);
 
     allocate_cnt++;
-    allocate_bytes += len + 1;
-    current_bytes += len + 1;
+    allocate_bytes += len;
+    current_bytes += len;
     peak_bytes = MAX(peak_bytes, current_bytes);
     last_peak_bytes = MAX(last_peak_bytes, current_bytes);
 
-    return strncpy(ss, s, len + 1);
+    return strncpy(ss, s, len);
 }
 
 /* Free block, as from malloc, realloc, or strsave */

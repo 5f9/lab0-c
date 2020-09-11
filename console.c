@@ -186,7 +186,7 @@ static char **parse_args(char *line, int *argcp)
     char **argv = calloc_or_fail(argc, sizeof(char *), "parse_args");
     src = buf;
     for (int i = 0; i < argc; i++) {
-        argv[i] = strsave_or_fail(src, "parse_args");
+        argv[i] = strsave_or_fail(src, len + 1, "parse_args");
         src += strlen(argv[i]) + 1;
     }
 
