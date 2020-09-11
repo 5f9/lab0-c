@@ -26,10 +26,10 @@ void set_verblevel(int level);
 void report_event(message_t msg, char *fmt, ...);
 
 /* Report useful information */
-void report(int verblevel, char *fmt, ...);
+void report(int level, char *fmt, ...);
 
 /* Like report, but without return character */
-void report_noreturn(int verblevel, char *fmt, ...);
+void report_noreturn(int level, char *fmt, ...);
 
 /* Attempt to call malloc.  Fail when returns NULL */
 void *malloc_or_fail(size_t bytes, char *fun_name);
@@ -41,7 +41,7 @@ void *calloc_or_fail(size_t cnt, size_t bytes, char *fun_name);
 char *strsave_or_fail(char *s, char *fun_name);
 
 /* Free block, as from malloc, or strsave */
-void free_block(void *b, size_t len);
+void free_block(void *b, size_t bytes);
 
 /* Free array, as from calloc */
 void free_array(void *b, size_t cnt, size_t bytes);

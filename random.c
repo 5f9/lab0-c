@@ -5,13 +5,13 @@
 #include <unistd.h>
 
 /* shameless stolen from ebacs */
-void randombytes(uint8_t *x, size_t how_much)
+void randombytes(uint8_t *x, size_t xlen)
 {
     ssize_t i;
     static int fd = -1;
 
-    ssize_t xlen = (ssize_t) how_much;
-    assert(xlen >= 0);
+    ssize_t len = (ssize_t) xlen;
+    assert(len >= 0);
     if (fd == -1) {
         for (;;) {
             fd = open("/dev/urandom", O_RDONLY);
@@ -21,9 +21,9 @@ void randombytes(uint8_t *x, size_t how_much)
         }
     }
 
-    while (xlen > 0) {
-        if (xlen < 1048576)
-            i = xlen;
+    while (len > 0) {
+        if (len < 1048576)
+            i = len;
         else
             i = 1048576;
 
@@ -34,7 +34,7 @@ void randombytes(uint8_t *x, size_t how_much)
         }
 
         x += i;
-        xlen -= i;
+        len -= i;
     }
 }
 

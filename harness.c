@@ -162,14 +162,14 @@ void *test_malloc(size_t size)
 }
 
 // cppcheck-suppress unusedFunction
-void *test_calloc(size_t nelem, size_t elsize)
+void *test_calloc(size_t nelem, size_t size)
 {
     /* Reference: Malloc tutorial
      * https://danluu.com/malloc-tutorial/
      */
-    size_t size = nelem * elsize;  // TODO: check for overflow
-    void *ptr = test_malloc(size);
-    memset(ptr, 0, size);
+    size_t count = nelem * size;  // TODO: check for overflow
+    void *ptr = test_malloc(count);
+    memset(ptr, 0, count);
     return ptr;
 }
 
