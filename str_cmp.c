@@ -24,37 +24,25 @@ int cmp_str_nat_case_desc(const char *a, const char *b)
     return strnatcasecmp(b, a);
 }
 
-cmp_func q_get_compar(const int sorting_order,
-                      const int natural_sort,
-                      const int ignoring_case)
+cmp_func get_compar(const size_t order_bits)
 {
-    if (ignoring_case) {
-        if (sorting_order) {
-            if (natural_sort) {
-                return cmp_str_nat_case_desc;
-            } else {
-                return cmp_str_case_desc;
-            }
-        } else {
-            if (natural_sort) {
-                return strnatcasecmp;
-            } else {
-                return strcasecmp;
-            }
-        }
-    } else {
-        if (sorting_order) {
-            if (natural_sort) {
-                return cmp_str_nat_desc;
-            } else {
-                return cmp_str_desc;
-            }
-        } else {
-            if (natural_sort) {
-                return strnatcmp;
-            } else {
-                return strcmp;
-            }
-        }
+    switch (order_bits) {
+    case natural_e:
+        return strnatcmp;
+    case ci_e:
+        return strcasecmp;
+    case natural_e | ci_e:
+        return strnatcasecmp;
+    case desc_e:
+        return cmp_str_desc;
+    case natural_e | desc_e:
+        return cmp_str_nat_desc;
+    case ci_e | desc_e:
+        return cmp_str_case_desc;
+    case natural_e | ci_e | desc_e:
+        return cmp_str_nat_case_desc;
+    case 0:
+    default:
+        return strcmp;
     }
 }

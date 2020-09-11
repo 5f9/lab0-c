@@ -8,20 +8,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/select.h>
-#include <sys/stat.h>
-#include <sys/types.h>
+
 #include <unistd.h>
 
+#include "completion.h"
 #include "console.h"
 #include "report.h"
 
 /* Some global values */
 int simulation = 0;
+bool debug = false;
 static cmd_ptr cmd_list = NULL;
 static param_ptr param_list = NULL;
 static bool block_flag = false;
-static bool prompt_flag = true;
 
 /* Am I timing a command that has the console blocked? */
 static bool block_timing = false;
@@ -530,84 +529,9 @@ static char *readline()
     return linebuf;
 }
 
-/* Determine if there is a complete command line in input buffer */
-static bool read_ready()
-{
-    for (int i = 0; buf_stack && i < buf_stack->cnt; i++) {
-        if (buf_stack->bufptr[i] == '\n')
-            return true;
-    }
-
-    return false;
-}
-
 static bool cmd_done()
 {
     return !buf_stack || quit_flag;
-}
-
-/*
- * Handle command processing in program that uses select as main control loop.
- * Like select, but checks whether command input either present in internal
- * buffer
- * or readable from command input.  If so, that command is executed.
- * Same return as select.  Command input file removed from readfds
- *
- * nfds should be set to the maximum file descriptor for network sockets.
- * If nfds == 0, this indicates that there is no pending network activity
- */
-int cmd_select(int nfds,
-               fd_set *readfds,
-               fd_set *writefds,
-               fd_set *exceptfds,
-               struct timeval *timeout)
-{
-    char *cmdline;
-    int infd;
-    fd_set local_readset;
-    while (!block_flag && read_ready()) {
-        cmdline = readline();
-        interpret_cmd(cmdline);
-        prompt_flag = true;
-    }
-
-    if (cmd_done())
-        return 0;
-
-    if (!block_flag) {
-        /* Process any commands in input buffer */
-        if (!readfds)
-            readfds = &local_readset;
-
-        /* Add input fd to readset for select */
-        infd = buf_stack->fd;
-        FD_SET(infd, readfds);
-        if (infd == STDIN_FILENO && prompt_flag) {
-            printf("%s", prompt);
-            fflush(stdout);
-            prompt_flag = true;
-        }
-
-        if (infd >= nfds)
-            nfds = infd + 1;
-    }
-    if (nfds == 0)
-        return 0;
-
-    int result = select(nfds, readfds, writefds, exceptfds, timeout);
-    if (result <= 0)
-        return result;
-
-    infd = buf_stack->fd;
-    if (readfds && FD_ISSET(infd, readfds)) {
-        /* Commandline input available */
-        FD_CLR(infd, readfds);
-        result--;
-        cmdline = readline();
-        if (cmdline)
-            interpret_cmd(cmdline);
-    }
-    return result;
 }
 
 bool finish_cmd()
@@ -624,8 +548,45 @@ bool run_console(char *infile_name)
         report(1, "ERROR: Could not open source file '%s'", infile_name);
         return false;
     }
+    bool is_stdin = buf_stack->fd == STDIN_FILENO;
 
-    while (!cmd_done())
-        cmd_select(0, NULL, NULL, NULL, NULL);
+    if (is_stdin && !debug) {
+        linenoiseSetCompletionCallback(completion);
+        linenoiseSetHintsCallback(hints);
+        linenoiseHistoryLoad(HISTORY_FILE);
+    }
+
+    while (!cmd_done()) {
+        if (is_stdin && !debug) {
+            char *line = linenoise(prompt);
+            if (line) {
+                size_t len = strlen(line);
+                strncpy(linebuf, line, RIO_BUFSIZE);
+                linebuf[len] = '\n';
+                linebuf[len + 1] = '\0';
+                if (echo) {
+                    report_noreturn(1, prompt);
+                    report_noreturn(1, linebuf);
+                }
+                if (interpret_cmd(linebuf)) {
+                    linenoiseHistoryAdd(line);
+                }
+                linenoiseFree(line);
+            }
+        } else {
+            if (is_stdin) {
+                printf("%s", prompt);
+                fflush(stdout);
+            }
+            char *cmdline = readline();
+            if (cmdline)
+                interpret_cmd(cmdline);
+        }
+    }
+
+    if (is_stdin && !debug) {
+        linenoiseHistorySave(HISTORY_FILE);
+    }
+
     return err_cnt == 0;
 }

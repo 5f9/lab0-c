@@ -59,13 +59,11 @@ static int fail_limit = BIG_QUEUE;
 static int fail_count = 0;
 
 static int string_length = MAXSTRING;
-static int sorting_order = 0;  // 0: ascending order, 1: descending order
-static int natural_sort = 0;   // 0: strcasecmp, 1: natural sort
-static int ignoring_case = 0;  // 0: case-sensitive, 1: ignoring case
 
 #define MIN_RANDSTR_LEN 5
 #define MAX_RANDSTR_LEN 10
-static const char charset[] = "abcdefghijklmnopqrstuvwxyz";
+static const char charset[] =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
 /* Forward declarations */
 static bool show_queue(int vlevel);
@@ -99,7 +97,18 @@ static void console_init()
         "rhq", do_remove_head_quiet,
         "                | Remove from head of queue without reporting value.");
     add_cmd("reverse", do_reverse, "                | Reverse queue");
-    add_cmd("sort", do_sort, "                | Sort queue in ascending order");
+    add_cmd("sort", do_sort,
+            " [ci] [desc]    | Sort queue in order\n"
+            "                                |   ci: case-insensitive "
+            "(default: case-sensitive)\n"
+            "                                |   desc: descending (default: "
+            "ascending)");
+    add_cmd("nsort", do_sort,
+            " [ci] [desc]    | Natural sort queue in order\n"
+            "                                |   ci: case-insensitive "
+            "(default: case-sensitive)\n"
+            "                                |   desc: descending (default: "
+            "ascending)");
     add_cmd("size", do_size,
             " [n]            | Compute queue size n times (default: n == 1)");
     add_cmd("show", do_show, "                | Show queue contents");
@@ -109,14 +118,6 @@ static void console_init()
               NULL);
     add_param("fail", &fail_limit,
               "Number of times allow queue operations to return false", NULL);
-    add_param("natural", &natural_sort,
-              "specify natural sort (0: strcasecmp, 1: natural)", NULL);
-    add_param("case", &ignoring_case,
-              "specify case-insensitive string comparison (0: sensitive, 1: "
-              "insensitive)",
-              NULL);
-    add_param("order", &sorting_order,
-              "specify sorting order (0: ascending, 1: descending)", NULL);
 }
 
 static bool do_new(int argc, char *argv[])
@@ -576,7 +577,7 @@ static bool is_natural_sort(void)
     bool result = false;
 
     // ascending natural sort
-    cmp_func cmpare_func = q_get_compar(0, 1, 0);
+    cmp_func cmpare_func = get_compar(natural_e);
 
     // a < a0 < a1 < a1a < a1b < a2 < a10 < a20
     char *natsort[8] = {"a", "a0", "a1", "a1a", "a1b", "a2", "a10", "a20"};
@@ -611,8 +612,8 @@ bool do_sort(int argc, char *argv[])
         return ok;
     }
 
-    if (argc != 1) {
-        report(1, "%s takes no arguments", argv[0]);
+    if (argc != 1 && argc != 2 && argc != 3) {
+        report(1, "%s needs 0-2 arguments", argv[0]);
         return false;
     }
 
@@ -620,15 +621,32 @@ bool do_sort(int argc, char *argv[])
         report(3, "Warning: Calling sort on null queue");
     error_check();
 
+    size_t sort_order = 0;
+    if (!strcmp("nsort", argv[0]))
+        sort_order |= natural_e;
+
+    if (argc > 1) {
+        // case-insensitive
+        if (!strcmp("ci", argv[1]))
+            sort_order |= ci_e;
+
+        if (!strcmp("desc", argv[1]))
+            sort_order |= desc_e;
+    }
+
+    if ((sort_order & ci_e) && argc > 2) {
+        if (!strcmp("desc", argv[2]))
+            sort_order |= desc_e;
+    }
+
     int cnt = q_size(q);
     if (cnt < 2)
         report(3, "Warning: Calling sort on single node");
     error_check();
 
-    cmp_func cmpare_func =
-        q_get_compar(sorting_order, natural_sort, ignoring_case);
-    char *sorting_name = sorting_order ? "descending" : "ascending";
-    char *cmpare_name = natural_sort ? " natural" : "";
+    cmp_func cmpare_func = get_compar(sort_order);
+    char *sorting_name = (sort_order & ci_e) ? "descending" : "ascending";
+    char *cmpare_name = (sort_order & natural_e) ? " natural" : "";
     set_noallocate_mode(true);
     if (exception_setup(true))
         q_sort(q, cmpare_func);

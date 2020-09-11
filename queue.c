@@ -6,20 +6,26 @@
 #include "merge_sort.h"
 #include "queue.h"
 
-static list_ele_t *new_ele_str(char const *s)
+static inline list_ele_t *new_ele_str(char const *s)
 {
     list_ele_t *e = malloc(sizeof(list_ele_t));
     RETURN_IF_NULL(e, NULL);
 
     size_t length = strlen(s) + 1;
     e->value = malloc(length);
-    if (!e->value) {
-        free(e);
-        return NULL;
-    } else {
+    if (likely(e->value)) {
         STRNCPY(e->value, s, length);
         return e;
+    } else {
+        free(e);
+        return NULL;
     }
+}
+
+static inline void free_ele_str(list_ele_t *e)
+{
+    free(e->value);
+    free(e);
 }
 
 /*
@@ -43,11 +49,9 @@ void q_free(queue_t *q)
     RETURN_IF_NULL(q, );
 
     /* Free queue structure */
-    while (q->head) {
-        free(q->head->value);
-        list_ele_t *p = q->head->next;
-        free(q->head);
-        q->head = p;
+    for (list_ele_t *p, *e = q->head; e; e = p) {
+        p = e->next;
+        free_ele_str(e);
     }
 
     free(q);
@@ -117,8 +121,8 @@ bool q_remove_head(queue_t *q, char *sp, size_t bufsize)
     if (sp && bufsize)
         STRNCPY(sp, e->value, bufsize);
 
-    free(e->value);
-    free(e);
+    free_ele_str(e);
+
     if (!(--q->size))
         q->tail = NULL;
 
@@ -148,20 +152,20 @@ void q_reverse(queue_t *q)
     RETURN_IF_NULL(q && 1 < q->size, );
 
     q->tail = q->head;
-    list_ele_t *e = q->head->next;
-    while (e->next) {
-        list_ele_t *t = e->next;
-        e->next = q->head;
-        q->head = e;
-        e = t;
+
+    list_ele_t *p, *e, *t;
+    for (p = q->head, e = p->next; e->next; p = e, e = t) {
+        t = e->next;
+        e->next = p;
     }
-    e->next = q->head;
+
+    e->next = p;
     q->head = e;
     q->tail->next = NULL;
 }
 
 /*
- * Sort elements of queue in ascending order
+ * Sort elements of queue in specify order
  * No effect if q is NULL or empty. In addition, if q has only one
  * element, do nothing.
  */

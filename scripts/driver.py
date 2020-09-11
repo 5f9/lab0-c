@@ -36,7 +36,9 @@ class Tracer:
         15: "trace-15-perf",
         16: "trace-16-perf",
         17: "trace-17-complexity",
-        18: "trace-18-natsort"
+        18: "trace-18-natsort",
+        19: "trace-19-misc",
+        20: "trace-20-natsort-perf"
     }
 
     traceProbs = {
@@ -57,10 +59,12 @@ class Tracer:
         15: "Trace-15",
         16: "Trace-16",
         17: "Trace-17",
-        18: "Trace-18"
+        18: "Trace-18",
+        19: "trace-19",
+        20: "trace-20"
     }
 
-    maxScores = [0, 6, 6, 6, 6, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 5, 1]
+    maxScores = [0, 6, 6, 6, 6, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 5, 1, 1, 1]
 
     RED = '\033[91m'
     GREEN = '\033[92m'

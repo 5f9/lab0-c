@@ -7,13 +7,12 @@
  *
  * It uses a singly-linked list to represent the set of queue elements
  */
-
 #include <stdbool.h>
 #include <stddef.h>
 #include "str_cmp.h"
 
 #ifndef likely
-#define likely(x) __builtin_expect((x), 1)
+#define likely(x) __builtin_expect(!!(x), 1)
 #endif
 #ifndef unlikely
 #define unlikely(x) __builtin_expect((x), 0)
@@ -107,7 +106,7 @@ int q_size(const queue_t *q);
 void q_reverse(queue_t *q);
 
 /*
- * Sort elements of queue in ascending order
+ * Sort elements of queue in specify order
  * No effect if q is NULL or empty. In addition, if q has only one
  * element, do nothing.
  */

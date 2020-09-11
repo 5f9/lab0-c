@@ -1,5 +1,5 @@
-#ifndef MERGE_SORT_H
-#define MERGE_SORT_H
+#ifndef LAB0_MERGE_SORT_H
+#define LAB0_MERGE_SORT_H
 
 #include "queue.h"
 

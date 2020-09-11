@@ -1,3 +1,6 @@
 [submodule "natsort"]
 	path = natsort
 	url = https://github.com/5f9/natsort.git
+[submodule "linenoise"]
+	path = linenoise
+	url = https://github.com/5f9/linenoise.git

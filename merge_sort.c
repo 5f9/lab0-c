@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-#include "queue.h"
+#include "merge_sort.h"
 
 // From https://github.com/torvalds/linux/blob/master/lib/list_sort.c
 /*
@@ -7,9 +7,8 @@
  * to chaining of merge() calls: null-terminated, no reserved or
  * sentinel head node.
  */
-static inline list_ele_t *merge(const cmp_func cmp,
-                                list_ele_t *a,
-                                list_ele_t *b)
+__attribute__((nonnull(1, 2, 3))) static inline list_ele_t *
+merge(const cmp_func cmp, list_ele_t *a, list_ele_t *b)
 {
     // cppcheck-suppress unassignedVariable
     list_ele_t *head, **tail = &head;
@@ -39,10 +38,8 @@ static inline list_ele_t *merge(const cmp_func cmp,
 /*
  * Combine final list merge with restoration
  */
-static inline void merge_final(const cmp_func cmp,
-                               queue_t *q,
-                               list_ele_t *a,
-                               list_ele_t *b)
+__attribute__((nonnull(1, 2, 3, 4))) static inline void
+merge_final(const cmp_func cmp, queue_t *q, list_ele_t *a, list_ele_t *b)
 {
     list_ele_t head = {.next = q->head};
     list_ele_t *tail = &head;
@@ -76,9 +73,9 @@ static inline void merge_final(const cmp_func cmp,
     q->tail = tail;
 }
 
-void merge_sort(queue_t *q, const cmp_func cmp)
+__attribute__((nonnull(1, 2))) void merge_sort(queue_t *q, const cmp_func cmp)
 {
-    list_ele_t *sorted[64];
+    list_ele_t *sorted[64 - __builtin_clzll((unsigned long long) q->size)];
     size_t sorted_count = 0;
 
     list_ele_t *list = q->head->next, *pending = q->head;
