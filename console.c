@@ -17,7 +17,6 @@
 
 /* Some global values */
 int simulation = 0;
-bool debug = false;
 static cmd_ptr cmd_list = NULL;
 static param_ptr param_list = NULL;
 static bool block_flag = false;
@@ -542,7 +541,7 @@ bool finish_cmd()
     return ok && err_cnt == 0;
 }
 
-bool run_console(char *infile_name)
+bool run_console(char *infile_name, bool autocompletion)
 {
     if (!push_file(infile_name)) {
         report(1, "ERROR: Could not open source file '%s'", infile_name);
@@ -550,14 +549,14 @@ bool run_console(char *infile_name)
     }
     bool is_stdin = buf_stack->fd == STDIN_FILENO;
 
-    if (is_stdin && !debug) {
+    if (is_stdin && autocompletion) {
         linenoiseSetCompletionCallback(completion);
         linenoiseSetHintsCallback(hints);
         linenoiseHistoryLoad(HISTORY_FILE);
     }
 
     while (!cmd_done()) {
-        if (is_stdin && !debug) {
+        if (is_stdin && autocompletion) {
             char *line = linenoise(prompt);
             if (line) {
                 size_t len = strlen(line);
@@ -584,7 +583,7 @@ bool run_console(char *infile_name)
         }
     }
 
-    if (is_stdin && !debug) {
+    if (is_stdin && autocompletion) {
         linenoiseHistorySave(HISTORY_FILE);
     }
 

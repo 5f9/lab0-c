@@ -63,6 +63,6 @@ bool finish_cmd();
 
 /* Run command loop.  Non-null infile_name implies read commands from that file
  */
-bool run_console(char *infile_name);
+bool run_console(char *infile_name, bool autocompletion);
 
 #endif /* LAB0_CONSOLE_H */

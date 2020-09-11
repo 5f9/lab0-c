@@ -25,8 +25,8 @@ class Debugger:
     def debug(self, program):
         return self([
             "-ex", "handle SIGALRM ignore",
+            "-ex", "set args -d", # Disable auto completion
             "-ex", "start",
-            "-ex", "set var debug=1",
             "-ex", "c",
             program
         ])

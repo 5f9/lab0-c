@@ -785,6 +785,7 @@ static void usage(char *cmd)
     printf("\t-f IFILE   Read commands from IFILE\n");
     printf("\t-v VLEVEL  Set verbosity level\n");
     printf("\t-l LFILE   Echo results to LFILE\n");
+    printf("\t-d         Disable auto completion\n");
     exit(0);
 }
 
@@ -834,8 +835,9 @@ int main(int argc, char *argv[])
     char *logfile_name = NULL;
     int level = 4;
     int c;
+    bool autocompletion = true;
 
-    while ((c = getopt(argc, argv, "hv:f:l:")) != -1) {
+    while ((c = getopt(argc, argv, "hv:f:l:d")) != -1) {
         switch (c) {
         case 'h':
             usage(argv[0]);
@@ -852,6 +854,9 @@ int main(int argc, char *argv[])
             strncpy(lbuf, optarg, BUFSIZE);
             lbuf[BUFSIZE - 1] = '\0';
             logfile_name = lbuf;
+            break;
+        case 'd':
+            autocompletion = false;
             break;
         default:
             printf("Unknown option '%c'\n", c);
@@ -875,7 +880,7 @@ int main(int argc, char *argv[])
     add_quit_helper(queue_quit);
 
     bool ok = true;
-    ok = ok && run_console(infile_name);
+    ok = ok && run_console(infile_name, autocompletion);
     ok = ok && finish_cmd();
 
     return ok ? 0 : 1;
