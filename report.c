@@ -50,6 +50,12 @@ bool set_logfile(char *file_name)
     return logfile != NULL;
 }
 
+void close_logfile(void)
+{
+    if (logfile)
+        fclose(logfile);
+}
+
 void report_event(message_t msg, char *fmt, ...)
 {
     va_list ap;

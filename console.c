@@ -287,6 +287,8 @@ static bool do_quit_cmd(int argc, char *argv[])
         ok = ok && quit_helpers[i](argc, argv);
     }
 
+    close_logfile();
+
     quit_flag = true;
     return ok;
 }

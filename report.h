@@ -19,6 +19,8 @@ typedef enum { MSG_WARN, MSG_ERROR, MSG_FATAL } message_t;
 
 bool set_logfile(char *file_name);
 
+void close_logfile(void);
+
 extern int verblevel;
 void set_verblevel(int level);
 

@@ -4,12 +4,12 @@
 #include <stdint.h>
 #include <unistd.h>
 
+static int fd = -1;
+
 /* shameless stolen from ebacs */
 void randombytes(uint8_t *x, size_t xlen)
 {
     ssize_t i;
-    static int fd = -1;
-
     ssize_t len = (ssize_t) xlen;
     assert(len >= 0);
     if (fd == -1) {
@@ -43,4 +43,10 @@ uint8_t randombit(void)
     uint8_t ret = 0;
     randombytes(&ret, 1);
     return (ret & 1);
+}
+
+void close_randombytes(void)
+{
+    if (fd >= 0 && !(close(fd)))
+        fd = -1;
 }
