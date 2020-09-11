@@ -1,0 +1,3 @@
+[submodule "natsort"]
+	path = natsort
+	url = https://github.com/5f9/natsort.git

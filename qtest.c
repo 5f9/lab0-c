@@ -57,6 +57,7 @@ static int fail_limit = BIG_QUEUE;
 static int fail_count = 0;
 
 static int string_length = MAXSTRING;
+static int natural_sort = 0;  // 0: strcasecmp, 1: natural sort
 
 #define MIN_RANDSTR_LEN 5
 #define MAX_RANDSTR_LEN 10
@@ -104,6 +105,8 @@ static void console_init()
               NULL);
     add_param("fail", &fail_limit,
               "Number of times allow queue operations to return false", NULL);
+    add_param("natural", &natural_sort,
+              "specify natural sort (0: strcasecmp, 1: natural)", NULL);
 }
 
 static bool do_new(int argc, char *argv[])
@@ -547,9 +550,10 @@ bool do_sort(int argc, char *argv[])
         report(3, "Warning: Calling sort on single node");
     error_check();
 
+    cmp_func cmpare_func = q_get_compar(0, natural_sort);
     set_noallocate_mode(true);
     if (exception_setup(true))
-        q_sort(q);
+        q_sort(q, cmpare_func);
     exception_cancel();
     set_noallocate_mode(false);
 
@@ -558,7 +562,7 @@ bool do_sort(int argc, char *argv[])
         for (list_ele_t *e = q->head; e && --cnt; e = e->next) {
             /* Ensure each element in ascending order */
             /* FIXME: add an option to specify sorting order */
-            if (strcasecmp(e->value, e->next->value) > 0) {
+            if (cmpare_func(&e->value, &e->next->value) > 0) {
                 report(1, "ERROR: Not sorted in ascending order");
                 ok = false;
                 break;
