@@ -122,7 +122,6 @@ bool q_remove_head(queue_t *q, char *sp, size_t bufsize)
         STRNCPY(sp, e->value, bufsize);
 
     free_ele_str(e);
-
     if (!(--q->size))
         q->tail = NULL;
 
@@ -151,17 +150,17 @@ void q_reverse(queue_t *q)
 {
     RETURN_IF_NULL(q && 1 < q->size, );
 
-    q->tail = q->head;
+    list_ele_t *head = q->head;
+    q->tail = head;
 
-    list_ele_t *p, *e, *t;
-    for (p = q->head, e = p->next; e->next; p = e, e = t) {
-        t = e->next;
-        e->next = p;
+    list_ele_t *cursor = NULL;
+    while (head) {
+        list_ele_t *next = head->next;
+        head->next = cursor;
+        cursor = head;
+        head = next;
     }
-
-    e->next = p;
-    q->head = e;
-    q->tail->next = NULL;
+    q->head = cursor;
 }
 
 /*
