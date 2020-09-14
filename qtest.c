@@ -577,7 +577,7 @@ static bool is_natural_sort(void)
     bool result = false;
 
     // ascending natural sort
-    cmp_func cmpare_func = get_compar(natural_e);
+    cmp_func cmpare_func = get_compar(NATURAL_E);
 
     // a < a0 < a1 < a1a < a1b < a2 < a10 < a20
     char *natsort[8] = {"a", "a0", "a1", "a1a", "a1b", "a2", "a10", "a20"};
@@ -623,20 +623,20 @@ bool do_sort(int argc, char *argv[])
 
     size_t sort_order = 0;
     if (!strcmp("nsort", argv[0]))
-        sort_order |= natural_e;
+        sort_order |= NATURAL_E;
 
     if (argc > 1) {
         // case-insensitive
         if (!strcmp("ci", argv[1]))
-            sort_order |= ci_e;
+            sort_order |= CI_E;
 
         if (!strcmp("desc", argv[1]))
-            sort_order |= desc_e;
+            sort_order |= DESC_E;
     }
 
-    if ((sort_order & ci_e) && argc > 2) {
+    if ((sort_order & CI_E) && argc > 2) {
         if (!strcmp("desc", argv[2]))
-            sort_order |= desc_e;
+            sort_order |= DESC_E;
     }
 
     int cnt = q_size(q);
@@ -645,8 +645,8 @@ bool do_sort(int argc, char *argv[])
     error_check();
 
     cmp_func cmpare_func = get_compar(sort_order);
-    char *sorting_name = (sort_order & ci_e) ? "descending" : "ascending";
-    char *cmpare_name = (sort_order & natural_e) ? " natural" : "";
+    char *sorting_name = (sort_order & CI_E) ? "descending" : "ascending";
+    char *cmpare_name = (sort_order & NATURAL_E) ? " natural" : "";
     set_noallocate_mode(true);
     if (exception_setup(true))
         q_sort(q, cmpare_func);

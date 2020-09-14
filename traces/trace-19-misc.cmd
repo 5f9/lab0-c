@@ -1,7 +1,7 @@
 # Demonstration of queue testing framework
 # Use help command to see list of commands and options
 # Copy output to file
-log misc.txt
+log misc.log
 # Initial queue is NULL.
 show
 # Create empty queue

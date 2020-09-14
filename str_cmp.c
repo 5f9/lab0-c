@@ -27,19 +27,19 @@ int cmp_str_nat_case_desc(const char *a, const char *b)
 cmp_func get_compar(const size_t order_bits)
 {
     switch (order_bits) {
-    case natural_e:
+    case NATURAL_E:
         return strnatcmp;
-    case ci_e:
+    case CI_E:
         return strcasecmp;
-    case natural_e | ci_e:
+    case NATURAL_E | CI_E:
         return strnatcasecmp;
-    case desc_e:
+    case DESC_E:
         return cmp_str_desc;
-    case natural_e | desc_e:
+    case NATURAL_E | DESC_E:
         return cmp_str_nat_desc;
-    case ci_e | desc_e:
+    case CI_E | DESC_E:
         return cmp_str_case_desc;
-    case natural_e | ci_e | desc_e:
+    case NATURAL_E | CI_E | DESC_E:
         return cmp_str_nat_case_desc;
     case 0:
     default:

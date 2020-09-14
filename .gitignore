@@ -5,3 +5,5 @@ qtest
 .vscode
 .devcontainer
 core*
+massif.out.*
+*.log
