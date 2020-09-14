@@ -5,11 +5,11 @@
 #include <strings.h>
 #include "natsort/strnatcmp.h"
 
-typedef enum {
+enum {
     NATURAL_E = 0x01,  // natural sort
     CI_E = 0x02,       // case-insensitive
     DESC_E = 0x04,     // descending order
-} order_ele_t;
+};
 
 /* Comparison of the Linked list element function */
 typedef int (*cmp_func)(const char *, const char *);
